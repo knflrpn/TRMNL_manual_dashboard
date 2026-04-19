@@ -34,18 +34,18 @@ imagefill($image, 0, 0, $colors['white']);
 // ============================================================================
 
 // Fetch Weather Data (Open-Meteo)
-$weatherUrl = "https://api.open-meteo.com/v1/forecast?latitude=33.990067&longitude=-84.343689&daily=sunrise,sunset,precipitation_probability_max,temperature_2m_max,temperature_2m_min,apparent_temperature_max&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,cloud_cover,wind_speed_10m&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,cloud_cover&timezone=America%2FNew_York&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch";
+$weatherUrl = "https://api.open-meteo.com/v1/forecast?latitude=33.75&longitude=-84.38&daily=sunrise,sunset,precipitation_probability_max,temperature_2m_max,temperature_2m_min,apparent_temperature_max&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,cloud_cover,wind_speed_10m&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,cloud_cover&timezone=America%2FNew_York&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch";
 $weather_json = @file_get_contents($weatherUrl);
 $weather = $weather_json ? json_decode($weather_json, true) : null;
 
 // Fetch Moon Data (USNO)
 $currentDate = date('Y-m-d');
-$moonUrl = "https://aa.usno.navy.mil/api/rstt/oneday?date={$currentDate}&coords=33.99,-84.34&tz=-4";
+$moonUrl = "https://aa.usno.navy.mil/api/rstt/oneday?date={$currentDate}&coords=33.75,-84.38&tz=-4";
 $moon_json = @file_get_contents($moonUrl);
 $moonData = $moon_json ? json_decode($moon_json, true) : null;
 
 // Fetch Indoor AirGradient Data
-$airUrl = "https://api.airgradient.com/public/api/v1/locations/63386/measures/current?token=8a8167d1-93e4-47a3-aff7-edfa387f2364";
+$airUrl = "https://api.airgradient.com/public/api/v1/locations/69420/measures/current?token=yourtoken";
 $air_json = @file_get_contents($airUrl);
 $airData = $air_json ? json_decode($air_json, true) : null;
 
@@ -53,50 +53,40 @@ $airData = $air_json ? json_decode($air_json, true) : null;
 // 3. DRAW DASHBOARD COMPONENTS
 // ============================================================================
 
-// Draw Left & Middle Weather Sections
+// Draw Weather Sections
 if ($weather) {
     drawCurrentWeather($image, $weather, $colors, $font);
-    drawDailySummary($image, $weather, $colors, $font);
-    drawSunset($image, $weather, $colors, $font);
-    drawHourlyChart($image, $weather, $colors, $font, $dividerLeft);
+    drawForecast($image, $weather, $colors, $font);
+    drawDailySummary($image, $weather, $colors, $font, $dividerRight);
+    drawSunset($image, $weather, $colors, $font, $dividerRight);
+    drawHourlyChart($image, $weather, $colors, $font, $dividerLeft, $airData);
 } else {
     // Fallback error message if API fails
     imagettftext($image, 14, 0, 20, 40, $colors['black'], $font, "Error loading weather data.");
 }
 
-if ($moonData) {
-    drawMoonData($image, $moonData, $colors, $font);
-}
-
-if ($airData) {
-    drawIndoorData($image, $airData, $colors, $font);
-}
-
-// Draw Right Calendar & Forecast Sections
+// Draw Calendar & Moon (Right Column)
 drawCalendar($image, $colors, $font, $dividerRight);
 
-if ($weather) {
-    drawForecast($image, $weather, $colors, $font, $dividerRight);
+if ($moonData) {
+    drawMoonData($image, $moonData, $colors, $font, $dividerRight);
 }
 
 // ============================================================================
 // 4. DRAW LAYOUT DIVIDERS
 // ============================================================================
 
-// Vertical divider separating the main content from calendar/forecast
+// Vertical divider separating the main content from calendar/moon
 imageline($image, $dividerRight, 0, $dividerRight, IMG_HEIGHT, $colors['black']); 
 
-// Horizontal divider below Current Weather
+// Horizontal divider for bottom left
 imageline($image, 0, 245, $dividerLeft - 20, 245, $colors['light_grey']); 
 
-// Horizontal divider separating sunset and moon
-imageline($image, 0, 342, $dividerLeft - 20, 342, $colors['light_grey']); 
-
-// Horizontal divider separating moon and indoor temp text
+// Horizontal divider separating forecast and sunset
 imageline($image, 0, 430, $dividerLeft - 20, 430, $colors['light_grey']); 
 
-// Horizontal divider separating calendar and forecast
-imageline($image, $dividerRight, 285, IMG_WIDTH, 285, $colors['light_grey']); 
+// Horizontal divider separating calendar and moon
+imageline($image, $dividerRight, 380, IMG_WIDTH, 380, $colors['light_grey']); 
 
 // ============================================================================
 // 5. OUTPUT IMAGE
@@ -139,7 +129,7 @@ function drawCurrentWeather($img, $data, $colors, $font) {
     
     // Draw the cloud cover percentage directly adjacent to the state word
     if (isset($current['cloud_cover'])) {
-        $cloudStr = $current['cloud_cover'] . "% cover";
+        $cloudStr = $current['cloud_cover'] . "% cloudy";
         imagettftext($img, 15, 0, $x + $stateWidth + 10, 185, $colors['dark_grey'], $font, $cloudStr);
     }
 
@@ -149,11 +139,11 @@ function drawCurrentWeather($img, $data, $colors, $font) {
 /**
  * Draws the upcoming 4-day forecasted temperatures and precipitation.
  */
-function drawForecast($img, $data, $colors, $font, $dividerRight) {
+function drawForecast($img, $data, $colors, $font) {
     $daily = $data['daily'];
     
-    $x = $dividerRight + 15;
-    $y = 315;
+    $x = 20;
+    $y = 275;
     
     imagettftext($img, 12, 0, $x, $y, $colors['dark_grey'], $font, "FORECAST");
     $y += 35;
@@ -175,7 +165,7 @@ function drawForecast($img, $data, $colors, $font, $dividerRight) {
 /**
  * Draws the high/low temperature and average wind speed for the current day.
  */
-function drawDailySummary($img, $data, $colors, $font) {
+function drawDailySummary($img, $data, $colors, $font, $dividerRight) {
     $daily = $data['daily'];
     $hourly = $data['hourly'];
 
@@ -188,33 +178,33 @@ function drawDailySummary($img, $data, $colors, $font) {
     $todayWindData = array_slice($hourly['wind_speed_10m'], 0, 24);
     $avgWind = round(array_sum($todayWindData) / count($todayWindData));
 
-    $x = 20;
-    $y = 275;
+    $x = $dividerRight + 15;
+    $y = 300;
 
     imagettftext($img, 12, 0, $x, $y, $colors['black'], $font, "Today:  {$maxTemp}° / {$minTemp}°");
     
-    $y += 19;
+    $y += 22;
     imagettftext($img, 12, 0, $x, $y, $colors['dark_grey'], $font, "Max feels: {$feelsLikeMax}°  |  Wind: {$avgWind}mph");
 }
 
 /**
  * Draws today's sunset time.
  */
-function drawSunset($img, $data, $colors, $font) {
+function drawSunset($img, $data, $colors, $font, $dividerRight) {
     if (isset($data['daily']['sunset'][0])) {
         $sunsetTime = date('g:ia', strtotime($data['daily']['sunset'][0]));
         
-        $x = 20;
-        $y = 324;
+        $x = $dividerRight + 15;
+        $y = 360;
         
         imagettftext($img, 12, 0, $x, $y, $colors['black'], $font, "Sunset: " . $sunsetTime);
     }
 }
 
 /**
- * Draws the 12-hour plotted temperature graph, including humidity and precipitation.
+ * Draws the 12-hour plotted temperature graph, including humidity, precipitation, and indoor data.
  */
-function drawHourlyChart($img, $data, $colors, $font, $dividerLeft) {
+function drawHourlyChart($img, $data, $colors, $font, $dividerLeft, $airData) {
     $hourly = $data['hourly'];
     $hoursToShow = 12;
     
@@ -234,9 +224,17 @@ function drawHourlyChart($img, $data, $colors, $font, $dividerLeft) {
     $times = array_slice($hourly['time'], $startIndex, $hoursToShow);
     
     $chartX_start = $dividerLeft + 75; 
-    $chartX_end = 470; 
+    $chartX_end = 480; 
     $chartY_start = 80;
     $chartY_end = 455;
+    
+    // Draw Indoor Sensor Data
+    if ($airData && isset($airData['atmp']) && isset($airData['rhum'])) {
+        $indoorTempF = round(($airData['atmp'] * 9/5) + 32);
+        $indoorHum = $airData['rhum'];
+        $indoorText = "Indoor: " . $indoorTempF . "°   " . $indoorHum . "%";
+        imagettftext($img, 13, 0, 23, 460, $colors['black'], $font, $indoorText);
+    }
     
     // Draw Graph Column Headers
     $headerY = $chartY_start - 20;
@@ -350,7 +348,7 @@ function drawCalendar($img, $colors, $font, $dividerRight) {
 /**
  * Draws the current moon phase alongside moonrise and moonset times.
  */
-function drawMoonData($img, $data, $colors, $font) {
+function drawMoonData($img, $data, $colors, $font, $dividerRight) {
     $moon = $data['properties']['data'] ?? null;
     if (!$moon) return;
 
@@ -368,30 +366,15 @@ function drawMoonData($img, $data, $colors, $font) {
         }
     }
 
-    $x = 20; 
-    $y = 370;
+    $x = $dividerRight + 15; 
+    $y = 410;
 
     imagettftext($img, 12, 0, $x, $y, $colors['dark_grey'], $font, "MOON");
     
-    $y += 22;
+    $y += 25; 
     imagettftext($img, 12, 0, $x, $y, $colors['black'], $font, $phase);
     
-    $y += 22;
+    $y += 25;
     imagettftext($img, 12, 0, $x, $y, $colors['black'], $font, "Rise: " . $rise . "   Set: " . $set);
-}
-
-/**
- * Draws the indoor temperature and humidity.
- */
-function drawIndoorData($img, $data, $colors, $font) {
-    if (isset($data['atmp']) && isset($data['rhum'])) {
-        $indoorTempF = round(($data['atmp'] * 9/5) + 32);
-        $indoorHum = $data['rhum'];
-        $indoorText = "Indoor: " . $indoorTempF . "°   " . $indoorHum . "%";
-        
-        $x = 23;
-        $y = 460;
-        imagettftext($img, 13, 0, $x, $y, $colors['black'], $font, $indoorText);
-    }
 }
 ?>
