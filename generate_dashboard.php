@@ -9,7 +9,7 @@ define('IMG_WIDTH', 800);
 define('IMG_HEIGHT', 480);
 
 // Layout Boundaries
-$dividerLeft = 240;
+$dividerLeft = 245;
 $dividerRight = 533;
 
 // Font Path
@@ -126,7 +126,7 @@ function drawCurrentWeather($img, $data, $colors, $font) {
     $temp = round($current['temperature_2m']) . "°";
     $humidity = "Humidity: " . $current['relative_humidity_2m'] . "%";
     
-    $x = 15;
+    $x = 10;
     $currentTime = date('g:i a');
     
     // Calculate bounding box of the state text to dynamically position the cloud percentage
@@ -140,7 +140,7 @@ function drawCurrentWeather($img, $data, $colors, $font) {
     // Draw the cloud cover percentage directly adjacent to the state word
     if (isset($current['cloud_cover'])) {
         $cloudStr = $current['cloud_cover'] . "% cover";
-        imagettftext($img, 15, 0, $x + $stateWidth + 10, 185, $colors['dark_grey'], $font, $cloudStr);
+        imagettftext($img, 15, 0, $x + $stateWidth + 0, 185, $colors['dark_grey'], $font, $cloudStr);
     }
 
     imagettftext($img, 15, 0, $x + 5, 225, $colors['dark_grey'], $font, $humidity);
@@ -188,7 +188,7 @@ function drawDailySummary($img, $data, $colors, $font) {
     $todayWindData = array_slice($hourly['wind_speed_10m'], 0, 24);
     $avgWind = round(array_sum($todayWindData) / count($todayWindData));
 
-    $x = 20;
+    $x = 15;
     $y = 275;
 
     imagettftext($img, 12, 0, $x, $y, $colors['black'], $font, "Today:  {$maxTemp}° / {$minTemp}°");
@@ -204,7 +204,7 @@ function drawSunset($img, $data, $colors, $font) {
     if (isset($data['daily']['sunset'][0])) {
         $sunsetTime = date('g:ia', strtotime($data['daily']['sunset'][0]));
         
-        $x = 20;
+        $x = 15;
         $y = 324;
         
         imagettftext($img, 12, 0, $x, $y, $colors['black'], $font, "Sunset: " . $sunsetTime);
@@ -368,7 +368,7 @@ function drawMoonData($img, $data, $colors, $font) {
         }
     }
 
-    $x = 20; 
+    $x = 15; 
     $y = 370;
 
     imagettftext($img, 12, 0, $x, $y, $colors['dark_grey'], $font, "MOON");
@@ -389,7 +389,7 @@ function drawIndoorData($img, $data, $colors, $font) {
         $indoorHum = $data['rhum'];
         $indoorText = "Indoor: " . $indoorTempF . "°   " . $indoorHum . "%";
         
-        $x = 23;
+        $x = 15;
         $y = 460;
         imagettftext($img, 13, 0, $x, $y, $colors['black'], $font, $indoorText);
     }
