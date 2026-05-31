@@ -307,8 +307,16 @@ function drawCalendar($img, $colors, $font, $dividerRight) {
     $firstDayOfWeek = date('w', mktime(0, 0, 0, $month, 1, $year));
     $monthName = date('F Y');
     
+    // Draw the Month Title
     imagettftext($img, 16, 0, $calX + 45, $calY, $colors['black'], $font, strtoupper($monthName));
     $calY += 45;
+    
+    // Check if the month spans 6 weeks
+    $weeksSpanned = ceil(($firstDayOfWeek + $daysInMonth) / 7);
+    if ($weeksSpanned == 6) {
+        // Move the starting Y position up by 10 pixels
+        $calY -= 12;
+    }
     
     $days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     $colWidth = $calWidth / 7;
@@ -324,6 +332,7 @@ function drawCalendar($img, $colors, $font, $dividerRight) {
     $currentRow = 0;
     $rowHeight = 35;
     
+    // Draw the calendar grid
     for ($day = 1; $day <= $daysInMonth; $day++) {
         $x = $calX + ($currentCol * $colWidth);
         $y = $calY + ($currentRow * $rowHeight);
